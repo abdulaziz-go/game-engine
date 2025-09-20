@@ -55,26 +55,26 @@ func Start() {
 func (s *Server) handleNewClient(conn net.Conn) {
 	s.mutex.Lock()
 	var room *GameRoom
-
 	if s.waitingRoom != nil && s.waitingRoom.count < 2 {
 		room = s.waitingRoom
+		fmt.Printf("Player joining existing room #%d\n", room.id)
 	} else {
 		room = &GameRoom{
 			id:    s.roomId,
 			board: game.NewBoard(),
 		}
+		s.rooms[s.roomId] = room
+		s.waitingRoom = room
+		fmt.Printf("Created new game room #%d\n", room.id)
+		s.roomId++
 	}
-
-	s.rooms[s.roomId] = room
-	s.waitingRoom = room
-	s.roomId++
 
 	room.mutex.Lock()
 	playerNum := room.count
 	room.players[playerNum] = conn
-	if playerNum == 1 {
-		room.symbols[playerNum] = tlv.O
-	}
+
+	room.symbols[0] = tlv.X
+	room.symbols[1] = tlv.O
 
 	room.count++
 
@@ -85,8 +85,7 @@ func (s *Server) handleNewClient(conn net.Conn) {
 		if s.waitingRoom == room {
 			s.waitingRoom = nil
 		}
-
-		fmt.Printf("Room is full game started %d", room.id)
+		fmt.Printf("Room #%d is full - game started!\n", room.id)
 	}
 
 	room.mutex.Unlock()
@@ -98,16 +97,7 @@ func (s *Server) handleNewClient(conn net.Conn) {
 func (room *GameRoom) handlePlayer(conn net.Conn, playerNum int) {
 	defer conn.Close()
 
-	room.mutex.Lock()
-	defer room.mutex.Unlock()
-
-	msg := tlv.Encode(tlv.STATE, room.board.ToBytes())
-
-	for i := range room.count {
-		if room.players[i] != nil {
-			room.players[i].Write(msg)
-		}
-	}
+	room.sendState()
 
 	for {
 		buf := make([]byte, 1024)
@@ -115,9 +105,9 @@ func (room *GameRoom) handlePlayer(conn net.Conn, playerNum int) {
 		if err != nil {
 			break
 		}
-
 		msgType, data := tlv.Decode(buf[:n])
 		if msgType != tlv.MOVE || len(data) < 1 {
+			fmt.Println("error while decoding")
 			continue
 		}
 
@@ -129,6 +119,22 @@ func (room *GameRoom) handlePlayer(conn net.Conn, playerNum int) {
 
 		if success {
 			room.sendState()
+		}
+	}
+
+	room.handleDisconnect(playerNum)
+}
+
+func (room *GameRoom) sendState() {
+	room.mutex.Lock()
+	defer room.mutex.Unlock()
+
+	data := room.board.ToBytes()
+	msg := tlv.Encode(tlv.STATE, data)
+
+	for i := 0; i < room.count; i++ {
+		if room.players[i] != nil {
+			room.players[i].Write(msg)
 		}
 	}
 }

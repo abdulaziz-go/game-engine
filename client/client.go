@@ -15,10 +15,6 @@ type Client struct {
 	name string
 }
 
-func NewClient() *Client {
-	return &Client{}
-}
-
 func Start() {
 	conn, err := net.Dial("tcp", "localhost:8080")
 	if err != nil {
@@ -35,7 +31,7 @@ func (c *Client) run() {
 	fmt.Printf("Enter your name: ")
 	reader := bufio.NewReader(os.Stdin)
 	name, _ := reader.ReadString('\n')
-	c.name = name
+	c.name = strings.TrimSpace(name)
 
 	c.conn.Write(tlv.Encode(tlv.JOIN, []byte(c.name)))
 
@@ -67,21 +63,21 @@ func (c *Client) listenMessage() {
 }
 
 func (c *Client) displayBoard(board []byte, turn, winner byte) {
+	fmt.Print("\033[H\033[2J")
+
 	symbols := map[byte]string{tlv.EMPTY: " ", tlv.X: "X", tlv.O: "O"}
+	fmt.Printf("=== TIC-TAC-TOE === (Player: %s)\n", c.name)
+
 	fmt.Println(" " + symbols[board[0]] + " | " + symbols[board[1]] + " | " + symbols[board[2]])
 	fmt.Println("-----------")
 	fmt.Println(" " + symbols[board[3]] + " | " + symbols[board[4]] + " | " + symbols[board[5]])
 	fmt.Println("-----------")
 	fmt.Println(" " + symbols[board[6]] + " | " + symbols[board[7]] + " | " + symbols[board[8]])
 
-	fmt.Println("Enter moves as numbers 1-9:")
-	fmt.Println("1 2 3")
-	fmt.Println("4 5 6")
-	fmt.Println("7 8 9")
 	if winner == 3 {
-		fmt.Println("\n DRAW!")
+		fmt.Println("\n🤝 DRAW!")
 	} else if winner != tlv.EMPTY {
-		fmt.Printf("\n %s wins", symbols[winner])
+		fmt.Printf("\n🎉 %s wins!\n", symbols[winner])
 	} else {
 		fmt.Printf("\nCurrent turn: %s\n", symbols[turn])
 	}
@@ -101,7 +97,6 @@ func (c *Client) handleInput(reader *bufio.Reader) {
 		if input == "q" {
 			break
 		}
-
 		pos, err := strconv.Atoi(input)
 		if err != nil || pos < 1 || pos > 9 {
 			fmt.Println("Enter a number 1-9")
