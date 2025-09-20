@@ -1,9 +1,8 @@
 package main
 
 import (
-	"awesomeProject1/client"
-	"awesomeProject1/server"
 	"fmt"
+	"gamehomework/server"
 	"os"
 )
 
