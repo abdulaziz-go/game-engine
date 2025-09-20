@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"gamehomework/client"
 	"gamehomework/server"
 	"os"
 )
