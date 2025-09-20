@@ -1,5 +1,1 @@
 package server
-
-func Start() {
-
-}

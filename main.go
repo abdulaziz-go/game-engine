@@ -1,14 +1,18 @@
 package main
 
 import (
-	"game/client"
-	"game/server"
+	"awesomeProject1/client"
+	"awesomeProject1/server"
+	"fmt"
 	"os"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		panic("example running: go run main.go server|client")
+		fmt.Println("Usage:")
+		fmt.Println("  go run main.go server")
+		fmt.Println("  go run main.go client")
+		return
 	}
 
 	switch os.Args[1] {
@@ -16,5 +20,7 @@ func main() {
 		server.Start()
 	case "client":
 		client.Start()
+	default:
+		fmt.Println("Use 'server' or 'client'")
 	}
 }
