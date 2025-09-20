@@ -14,3 +14,11 @@ func NewBoard() *Board {
 		Winner: tlv.EMPTY,
 	}
 }
+
+func (b *Board) ToBytes() []byte {
+	data := make([]byte, 11)
+	copy(data[:9], b.Cells[:])
+	data[9] = b.Turn
+	data[10] = b.Winner
+	return data
+}
